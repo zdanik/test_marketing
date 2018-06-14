@@ -1,9 +1,11 @@
+import os
 import csv
 import json
 from collections import namedtuple
 from datetime import datetime
 
-FILE_PATH = 'incoming_files/installs.csv'
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+FILE_PATH = (os.path.join(PROJECT_ROOT, 'etc/installs.csv'))
 
 
 def load_installs_data(csv_file=FILE_PATH):
@@ -15,6 +17,12 @@ def load_installs_data(csv_file=FILE_PATH):
 
 
 def filter_installs_data_by_cohort_parameters():
+    """
+    Filter incoming data by parameters:
+        date of installs
+        identifier of app
+    :return: list of namedtuples
+    """
     data = []
     for created, mobile_app, country in load_installs_data():
         if (datetime.strptime('2016-05-02 00:00:00', '%Y-%m-%d %H:%M:%S')
@@ -35,6 +43,7 @@ def data_installs_intervals_by_country():
     Save result to json file
     :return: dict
     """
+    result_file = (os.path.join(PROJECT_ROOT, 'etc/filter_results/installs_count_by_realm.json'))
     dict_data = {}
     data = filter_installs_data_by_cohort_parameters()
     for install in data:
@@ -44,8 +53,10 @@ def data_installs_intervals_by_country():
             dict_data[install.country].append(install)
     for key, value in dict_data.items():
         dict_data[key] = len(value)
-    with open('cohort_installs.json', 'w+') as cohort_installs:
-        json.dump(dict_data, cohort_installs)
+    with open(result_file, 'w+') as result_file:
+        json.dump(dict_data, result_file)
     return dict_data
+
+data_installs_intervals_by_country()
 
 
