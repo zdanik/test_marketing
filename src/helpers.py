@@ -1,12 +1,14 @@
 from datetime import datetime
 
+from src.config import (
+    END_FILTER_DATE,
+    START_FILTER_DATE,
+)
+
 __all__ = (
     'is_data_in_cohort',
 )
 
 
 def is_data_in_cohort(date, mobile_app):
-    return ((datetime.strptime('2016-05-02 00:00:00', '%Y-%m-%d %H:%M:%S')
-             <= datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
-             <= datetime.strptime('2016-05-09 23:59:59', '%Y-%m-%d %H:%M:%S'))
-            and int(mobile_app) == 2)
+    return START_FILTER_DATE <= datetime.strptime(date, '%Y-%m-%d %H:%M:%S') <= END_FILTER_DATE and int(mobile_app) == 2
