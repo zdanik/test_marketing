@@ -1,17 +1,19 @@
 import csv
 import os
-from collections import namedtuple
-from datetime import datetime, timedelta
+import operator
 import time
+from collections import (
+    defaultdict,
+    namedtuple,
+)
+from datetime import datetime, timedelta
 
 from src.config import (
+    END_STEP_IN_SECONDS,
     INSTALLS_PATH,
+    OFFSET_IN_SECONDS,
     PROJECT_ROOT,
     PURCHASES_PATH,
-)
-from src.config import (
-    END_STEP_IN_SECONDS,
-    OFFSET_IN_SECONDS,
     START_FILTER_DATE,
 )
 from src.helpers import is_data_in_cohort
@@ -40,12 +42,15 @@ def get_installs_filtered_by_parameters():
         identifier of app
     :return: list of namedtuples
     """
+    started = time.time()
+    print('get_installs_filtered_by_parameters START: %s' % started)
     data = []
     installs = namedtuple('installs', 'created mobile_app country')
     for created, mobile_app, country in load_installs_data():
         if is_data_in_cohort(created, mobile_app):
             _install = installs(created, mobile_app, country)
             data.append(_install)
+    print('get_installs_filtered_by_parameters Finished in %s' % (time.time() - started))
     return data
 
 
@@ -55,6 +60,8 @@ def get_installs_intervals_by_country():
     Create dict with key <country> and value <number of installs>
     :return: dict
     """
+    started = time.time()
+    print('get_installs_intervals_by_country START: %s' % started)
     dict_data = {}
     installs = get_installs_filtered_by_parameters()
     for install in installs:
@@ -64,6 +71,7 @@ def get_installs_intervals_by_country():
             dict_data[install.country].append(install)
     for key, value in dict_data.items():
         dict_data[key] = len(value)
+    print('get_installs_intervals_by_country Finished in %s' % (time.time() - started))
     return dict_data
 
 
@@ -75,6 +83,8 @@ def filter_purchases_data_by_cohort_parameters():
     Save filtered data to csv file
     :return: path to csv file
     """
+    started = time.time()
+    print('filter_purchases_data_by_cohort_parameters START: %s' % started)
     result_file = (os.path.join(PROJECT_ROOT, 'etc/results/filtered_purchases.csv'))
     purchases = [('created', 'mobile_app', 'country', 'install_date', 'revenue',)]
     for created, mobile_app, country, install_date, revenue in load_purchases_data(PURCHASES_PATH):
@@ -84,6 +94,7 @@ def filter_purchases_data_by_cohort_parameters():
     with cohort_purchases:
         writer = csv.writer(cohort_purchases)
         writer.writerows(purchases)
+    print('filter_purchases_data_by_cohort_parameters Finished in %s' % (time.time() - started))
     return result_file
 
 
@@ -97,35 +108,30 @@ def get_revenue_by_period():
      }
     :return: dict
     """
+    started = time.time()
     _purchases_file = filter_purchases_data_by_cohort_parameters()
-    period_time_in_seconds = OFFSET_IN_SECONDS
     result = {}
-    purchases = namedtuple('purchases', 'created mobile_app country install_date revenue')
-    cnt = 0
-    while period_time_in_seconds < END_STEP_IN_SECONDS:
-        internal_start = time.time()
-        data = []
-        for created, mobile_app, country, install_date, revenue in load_purchases_data(_purchases_file):
-            if (START_FILTER_DATE <= datetime.strptime(created, '%Y-%m-%d %H:%M:%S')
-                    <= (START_FILTER_DATE + timedelta(seconds=period_time_in_seconds))):
-                _purchase = purchases(created, mobile_app, country, install_date, revenue)
-                data.append(_purchase)
-        revenue_by_country = {}
-        period_data = {}
-        for purchase_info in data:
-            if not period_data.get(purchase_info.country):
-                period_data[purchase_info.country] = [purchase_info]
-            else:
-                period_data[purchase_info.country].append(purchase_info)
-
-        for country, value in period_data.items():
-            revenue = 0
-            for purchase in value:
-                revenue += float(purchase.revenue)
-                revenue_by_country[country] = revenue
-        result[period_time_in_seconds] = revenue_by_country
-        period_time_in_seconds += OFFSET_IN_SECONDS
-        cnt += 1
-        internal_end = time.time()
-        print("Cycle time %s, counter %s" % (internal_end - internal_start, cnt))
+    with open(_purchases_file, "r") as f:
+        datareader = csv.reader(f)
+        next(datareader)
+        res = sorted(datareader, key=operator.itemgetter(0))
+    print('get_revenue_by_period START: %s' % started)
+    per_date = defaultdict(dict)
+    prev_period_in_seconds = 0
+    cur_rpi_date = START_FILTER_DATE.date()
+    period_in_seconds = 24 * 60 * 60
+    for created, mobile_app, country, install_date, revenue in res:
+        date_ = datetime.strptime(created, '%Y-%m-%d %H:%M:%S')
+        if cur_rpi_date < date_.date():
+            prev_period_in_seconds = period_in_seconds
+            result[prev_period_in_seconds] = per_date
+            per_date = defaultdict(dict)
+            cur_rpi_date = date_.date()
+            period_in_seconds += OFFSET_IN_SECONDS
+        if per_date[country]:
+            per_date[country] += float(revenue)
+        else:
+            per_date[country] = float(revenue) if period_in_seconds == OFFSET_IN_SECONDS \
+                else float(revenue) + result[prev_period_in_seconds][country]
+    print('get_revenue_by_period Finished in %s' % (time.time() - started))
     return result
