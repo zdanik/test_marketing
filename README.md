@@ -2,7 +2,7 @@
 
 Small project to generate csv file with data for cohort analysis.
 Incoming files are stored in /etc dir
-The result  - /etc/filter_results/results_csv.csv
+The result  - /etc/results/results_csv.csv
 
 ## Getting Started
 

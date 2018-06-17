@@ -75,7 +75,7 @@ def filter_purchases_data_by_cohort_parameters():
     Save filtered data to csv file
     :return: path to csv file
     """
-    result_file = (os.path.join(PROJECT_ROOT, 'etc/filter_results/filtered_purchases.csv'))
+    result_file = (os.path.join(PROJECT_ROOT, 'etc/results/filtered_purchases.csv'))
     purchases = [('created', 'mobile_app', 'country', 'install_date', 'revenue',)]
     for created, mobile_app, country, install_date, revenue in load_purchases_data(PURCHASES_PATH):
         if is_data_in_cohort(install_date, mobile_app):

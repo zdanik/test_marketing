@@ -19,7 +19,7 @@ from src.logic import (
 def get_result_csv():
     start = time.time()
     result = []
-    result_file = (os.path.join(PROJECT_ROOT, 'etc/filter_results/results.csv'))
+    result_file = (os.path.join(PROJECT_ROOT, 'etc/results/results.csv'))
     result.append(
         ('country', 'installs', 'RP1', 'RP2', 'RP3', 'RP4', 'RP5', 'RP6', 'RP7', 'RP8', 'RP9', 'RP10',)
     )
