@@ -6,10 +6,9 @@ from collections import (
     defaultdict,
     namedtuple,
 )
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from src.config import (
-    END_STEP_IN_SECONDS,
     INSTALLS_PATH,
     OFFSET_IN_SECONDS,
     PROJECT_ROOT,
